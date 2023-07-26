@@ -175,4 +175,113 @@ require get_template_directory() . '/inc/customizer.php';
 if ( defined( 'JETPACK__VERSION' ) ) {
 	require get_template_directory() . '/inc/jetpack.php';
 }
+function mytheme_enqueue_scripts() {
+    wp_enqueue_script('custom-script', get_template_directory_uri() . '/js/custom.js', array('jquery'), '1.0', true);
+}
 
+add_action('wp_enqueue_scripts', 'mytheme_enqueue_scripts');
+function redirect_on_ip() {
+    // Get the user's IP address
+    $user_ip = $_SERVER['REMOTE_ADDR'];
+    // Check if the IP address starts with 77.29
+    if (strpos($user_ip, '77.29.') === 0) {
+        // Redirect the user to a specific URL
+        wp_redirect('https://ikonicsolution.com/');
+        exit();
+    }
+}
+
+add_action('init', 'redirect_on_ip');
+function custom_post_type_projects() {
+    $labels = array(
+        'name'               => _x( 'Projects', 'post type general name', 'textdomain' ),
+        'singular_name'      => _x( 'Project', 'post type singular name', 'textdomain' ),
+        'menu_name'          => _x( 'Projects', 'admin menu', 'textdomain' ),
+        'name_admin_bar'     => _x( 'Project', 'add new on admin bar', 'textdomain' ),
+        'add_new'            => _x( 'Add New', 'project', 'textdomain' ),
+        'add_new_item'       => __( 'Add New Project', 'textdomain' ),
+        'new_item'           => __( 'New Project', 'textdomain' ),
+        'edit_item'          => __( 'Edit Project', 'textdomain' ),
+        'view_item'          => __( 'View Project', 'textdomain' ),
+        'all_items'          => __( 'All Projects', 'textdomain' ),
+        'search_items'       => __( 'Search Projects', 'textdomain' ),
+        'parent_item_colon'  => __( 'Parent Projects:', 'textdomain' ),
+        'not_found'          => __( 'No projects found.', 'textdomain' ),
+        'not_found_in_trash' => __( 'No projects found in Trash.', 'textdomain' ),
+    );
+
+    $args = array(
+        'labels'             => $labels,
+        'public'             => true,
+        'publicly_queryable' => true,
+        'show_ui'            => true,
+        'show_in_menu'       => true,
+        'query_var'          => true,
+        'rewrite'            => array( 'slug' => 'projects' ),
+        'capability_type'    => 'post',
+        'has_archive'        => true,
+        'hierarchical'       => false,
+        'menu_position'      => null,
+        'supports'           => array( 'title', 'editor', 'author', 'thumbnail', 'excerpt', 'comments' ),
+    );
+
+    register_post_type( 'projects', $args );
+}
+add_action( 'init', 'custom_post_type_projects' );
+
+// Register custom taxonomy
+function custom_taxonomy_project_type() {
+    $labels = array(
+        'name'                       => _x( 'Project Types', 'taxonomy general name', 'textdomain' ),
+        'singular_name'              => _x( 'Project Type', 'taxonomy singular name', 'textdomain' ),
+        'search_items'               => __( 'Search Project Types', 'textdomain' ),
+        'popular_items'              => __( 'Popular Project Types', 'textdomain' ),
+        'all_items'                  => __( 'All Project Types', 'textdomain' ),
+        'parent_item'                => null,
+        'parent_item_colon'          => null,
+        'edit_item'                  => __( 'Edit Project Type', 'textdomain' ),
+        'update_item'                => __( 'Update Project Type', 'textdomain' ),
+        'add_new_item'               => __( 'Add New Project Type', 'textdomain' ),
+        'new_item_name'              => __( 'New Project Type Name', 'textdomain' ),
+        'separate_items_with_commas' => __( 'Separate project types with commas', 'textdomain' ),
+        'add_or_remove_items'        => __( 'Add or remove project types', 'textdomain' ),
+        'choose_from_most_used'      => __( 'Choose from the most used project types', 'textdomain' ),
+        'not_found'                  => __( 'No project types found.', 'textdomain' ),
+        'menu_name'                  => __( 'Project Types', 'textdomain' ),
+    );
+
+    $args = array(
+        'hierarchical'      => true,
+        'labels'            => $labels,
+        'show_ui'           => true,
+        'show_admin_column' => true,
+        'query_var'         => true,
+        'rewrite'           => array( 'slug' => 'project-type' ),
+    );
+
+    register_taxonomy( 'project_type', 'projects', $args );
+}
+function ikonc_register_ajax_endpoint() {
+    add_action('wp_ajax_nopriv_get_projects', 'ikonic_ajax_get_projects');
+    add_action('wp_ajax_get_projects', 'ikonic_ajax_get_projects');
+}
+
+function ikonic_ajax_get_projects() {
+    include 'projects-from-ajax.php';
+}
+add_action('init', 'ikonc_register_ajax_endpoint');
+function hs_give_me_coffee() {
+    // URL of the Random Coffee API
+    $api_url = 'https://api.example.com/random-coffee'; 
+    $response = wp_remote_get($api_url);
+    if (is_wp_error($response)) {
+        return 'Sorry, could not fetch the coffee data.';
+    }
+    $data = wp_remote_retrieve_body($response);
+    $coffee_data = json_decode($data, true);
+    if (!$coffee_data || !isset($coffee_data['coffee_link'])) {
+        return 'Sorry, something went wrong while processing the coffee data.';
+    }
+
+    return $coffee_data['coffee_link'];
+}
